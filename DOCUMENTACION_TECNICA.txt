@@ -1,0 +1,35 @@
+DOCUMENTACIÓN TÉCNICA - WHITEDOT
+
+1. RESUMEN DEL PROYECTO
+WhiteDot es un juego tipo "Clicker" para Android donde los usuarios acumulan puntos mediante clics. El sistema destaca por su capacidad de sincronización offline, permitiendo que el progreso continúe incluso cuando la aplicación no está en ejecución, sincronizando los datos con un backend centralizado.
+
+2. ARQUITECTURA
+- Frontend: Android (Kotlin, Jetpack Compose, MVVM).
+- Backend: FastAPI (Python) + MySQL + SQLAlchemy.
+
+3. COMPONENTES CLAVE (ANDROID)
+- DotViewModel: Gestiona el estado del juego, la lógica de clics, las compras en la tienda y la sincronización con la API.
+- Room (GameDatabase): Persistencia local para asegurar que los puntos y la sesión (username) se mantengan entre reinicios.
+- Retrofit (WhiteDotAPI): Cliente para la comunicación con los endpoints de FastAPI.
+- Sensores: Uso del acelerómetro para activar el auto-click mediante movimiento físico.
+
+4. LÓGICA DE SINCRONIZACIÓN Y GANANCIAS OFFLINE
+- El sistema utiliza el campo 'last_logout' (DateTime) tanto en local como en servidor.
+- Al iniciar sesión, la app consulta el último cierre de sesión mediante GET /users/{username}/last-logout.
+- Cálculo: (Fecha Actual - Fecha Último Logout) * Clicks por segundo * Multiplicador Automático.
+- Los puntos calculados se suman al total y se notifican al usuario mediante un diálogo emergente.
+- Sincronización periódica: Cada acción importante llama a POST /sync para actualizar puntos, multiplicadores y estampa de tiempo en el servidor.
+
+5. TECNOLOGÍAS Y LIBRERÍAS
+- UI: Jetpack Compose.
+- Navegación: Compose Navigation.
+- Base de datos local: Room.
+- Red: Retrofit + Gson.
+- Audio: SoundPool (clics) y MediaPlayer (música de fondo).
+- Formato de fecha: ISO 8601 (yyyy-MM-dd'T'HH:mm:ss) para compatibilidad Kotlin-Python.
+
+6. ENDPOINTS PRINCIPALES
+- /register: Registro de usuario.
+- /login: Autenticación y recuperación de estado inicial.
+- /sync: Sincronización de puntos y estado.
+- /users/{username}/last-logout: Gestión de marcas de tiempo para ganancias offline.

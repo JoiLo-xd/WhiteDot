@@ -57,20 +57,20 @@ fun ScreenLogin(
         Row {
             Button(
                 onClick = onRegisterClick,
+                enabled = !state.isOffline,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color.White,
+                    containerColor = if (state.isOffline) Color.Gray else Color.White,
                     contentColor = Color.Black,
-
-                    )
+                )
             ) { Text("Crear usuari") }
             Spacer(Modifier.width(8.dp))
             Button(
                 onClick = onLoginClick,
+                enabled = !state.isOffline,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color.White,
+                    containerColor = if (state.isOffline) Color.Gray else Color.White,
                     contentColor = Color.Black,
-
-                    )
+                )
                 ) { Text("Entrar") }
         }
 

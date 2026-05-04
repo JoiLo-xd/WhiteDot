@@ -1,8 +1,16 @@
 package com.joilol.whitedot.viewmodel
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.joilol.whitedot.model.User
+import com.joilol.whitedot.util.NetworkUtils
+import com.joilol.whitedot.model.GameData
+import com.joilol.whitedot.model.persistance.LoginRequest
+import com.joilol.whitedot.model.persistance.RetrofitClient
+import com.joilol.whitedot.model.persistance.UserSyncRequest
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -22,7 +30,8 @@ data class LoginUiState(
     val password: String = "",
     val message: String = "",
     val errorMsg: String = "",
-    val screenState: AppScreens = AppScreens.LOGIN
+    val screenState: AppScreens = AppScreens.LOGIN,
+    val isOffline: Boolean = false
 )
 
 // sealed: només pot ser un objecte definit a la mateixa llibreria que LoginEvent.
@@ -33,7 +42,7 @@ sealed interface LoginEvent {
 
 // ViewModel és una classe de Kotling per aplicacions.
 // Aquí estem creant una extensió d'aquesta classe.
-class LoginViewModel : ViewModel() {
+class LoginViewModel(application: Application) : AndroidViewModel(application) {
     // La lògica de la nostra App ha de tenir el Hashmap de clients:
     private val users = mutableMapOf<String, User>()
 
@@ -50,6 +59,28 @@ class LoginViewModel : ViewModel() {
     private val _eventFlow = MutableSharedFlow<LoginEvent>()
     val eventFlow = _eventFlow.asSharedFlow()
 
+    init {
+        checkConnection()
+    }
+
+    private fun checkConnection() {
+        val online = NetworkUtils.isOnline(getApplication())
+        if (!online) {
+            _uiState.value = _uiState.value.copy(
+                errorMsg = "No se ha podido establecer conexión con el servidor, usando datos en local",
+                isOffline = true
+            )
+            // Opcional: Podem saltar automàticament després d'un segon o directament
+            viewModelScope.launch {
+                kotlinx.coroutines.delay(2000) // Donem temps a llegir el missatge
+                _uiState.value = _uiState.value.copy(
+                    username = "LocalUser",
+                    screenState = AppScreens.WELCOME
+                )
+            }
+        }
+    }
+
 
 
     fun onUsernameChange(input: String) {
@@ -64,27 +95,62 @@ class LoginViewModel : ViewModel() {
         _uiState.value = _uiState.value.copy(password = input, message = "", errorMsg = "")
     }
 
-    fun onRegisterClick(){
+    fun onRegisterClick() {
         val current = _uiState.value
-        if (users.containsKey(current.username)) {
-            _uiState.value = current.copy(errorMsg = "ERROR: L'usuari ja existeix !!", message = "")
-        } else {
-            users[current.username] = User(current.username, current.password)
-            _uiState.value = current.copy(message = "Usuari registrat correctament !!", username = "", password ="", errorMsg = "")
+        if (current.username.isBlank() || current.password.isBlank()) {
+            _uiState.value = current.copy(errorMsg = "ERROR: Usuari i contrasenya obligatoris")
+            return
+        }
+
+        viewModelScope.launch {
+            try {
+                val response = RetrofitClient.api.register(LoginRequest(current.username, current.password))
+                if (response.isSuccessful) {
+                    _uiState.value = current.copy(
+                        message = "Usuari registrat correctament !!",
+                        username = "",
+                        password = "",
+                        errorMsg = ""
+                    )
+                } else {
+                    val errorBody = response.errorBody()?.string()
+                    _uiState.value = current.copy(errorMsg = "ERROR: $errorBody", message = "")
+                }
+            } catch (e: Exception) {
+                _uiState.value = current.copy(errorMsg = "ERROR de connexió: ${e.message}", message = "")
+            }
         }
     }
 
-    fun onLoginClick(){
+    fun onLoginClick() {
         val current = _uiState.value
-        val storedUser = users[current.username] //Això pot ser null !!
-        if (storedUser == null) {
-            _uiState.value = current.copy(errorMsg = "ERROR: L'usuari no existeix !!", message = "")
-        } else {
-            if( storedUser.password == current.password) {
-                // Alerta, si canvio aquí l'username no el podré recollir per salidar!
-                _uiState.value = current.copy(message = "Login Exitós !!", errorMsg = "", password ="", screenState = AppScreens.WELCOME)
-            } else {
-                _uiState.value = current.copy(message = "", errorMsg =  "ERROR: Credencials invàlides !!")
+        if (current.username.isBlank() || current.password.isBlank()) {
+            _uiState.value = current.copy(errorMsg = "ERROR: Usuari i contrasenya obligatoris")
+            return
+        }
+
+        viewModelScope.launch {
+            try {
+                val response = RetrofitClient.api.login(LoginRequest(current.username, current.password))
+                if (response.isSuccessful) {
+                    val userResponse = response.body()
+                    userResponse?.let {
+                        GameData.username = it.username
+                        GameData.totalClicksEver = it.points.toFloat()
+                        GameData.autoClicksCount = it.points.toFloat()
+                        // Podríamos sincronizar más campos aquí si el backend los tuviera
+                    }
+                    _uiState.value = current.copy(
+                        message = "Login Exitós !!",
+                        errorMsg = "",
+                        password = "",
+                        screenState = AppScreens.WELCOME
+                    )
+                } else {
+                    _uiState.value = current.copy(message = "", errorMsg = "ERROR: Credencials invàlides !!")
+                }
+            } catch (e: Exception) {
+                _uiState.value = current.copy(errorMsg = "ERROR de connexió: ${e.message}", message = "")
             }
         }
     }

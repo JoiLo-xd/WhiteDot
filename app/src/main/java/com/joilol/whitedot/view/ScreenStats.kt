@@ -33,8 +33,10 @@ fun ScreenStats(
         Text("ESTADÍSTICAS", color = Color.White, fontSize = 32.sp)
         Spacer(Modifier.height(40.dp))
 
-        Text("Clics totales: ${state.totalEver}", color = Color.White, fontSize = 20.sp)
-        Text("Clics automáticos: ${state.totalAuto}", color = Color.White, fontSize = 20.sp)
+        Text("Clics totales: ${state.totalEver.toInt()}", color = Color.White, fontSize = 20.sp)
+        Text("Clics automáticos: ${state.totalAuto.toInt()}", color = Color.White, fontSize = 20.sp)
+        Text("Velocidad: x${"%.1f".format(2000f / state.autoDelay)}", color = Color.White, fontSize = 20.sp)
+        Text("Prob. Crítico: ${(state.critChance * 100).toInt()}%", color = Color.White, fontSize = 20.sp)
 
         Spacer(Modifier.height(60.dp))
 

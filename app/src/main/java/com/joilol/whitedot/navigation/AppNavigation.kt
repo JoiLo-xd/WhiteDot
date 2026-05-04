@@ -15,6 +15,7 @@ import androidx.navigation.navArgument
 import com.joilol.whitedot.view.ScreenDot
 import com.joilol.whitedot.view.ScreenLogin
 import com.joilol.whitedot.view.ScreenStats
+import com.joilol.whitedot.view.ScreenStore
 import com.joilol.whitedot.view.ScreenWelcome
 import com.joilol.whitedot.viewmodel.DotViewModel
 import com.joilol.whitedot.viewmodel.LoginViewModel
@@ -38,6 +39,7 @@ fun AppNavigation(
     onCloseApp: () -> Unit
 ){
     val navController = rememberNavController()
+    val dotVM: DotViewModel = viewModel()
 
     // Funcions de soporte
     fun ferLogout() = navController.navigate(AppScreens.Login.route, ::configurarPopUpLogin)
@@ -89,22 +91,22 @@ fun AppNavigation(
 
         // RUTA 3: El juego del Dot
         composable(route = AppScreens.Simon.route) {
-            val dotVM: DotViewModel = viewModel()
             val dotState by dotVM.uiState.collectAsState()
 
             ScreenDot(
                 state = dotState,
                 onDotClick = { dotVM.incrementCount() },
                 onAutoClickClick = { dotVM.toggleAutoClick() },
-                onStatsClick = { navController.navigate(AppScreens.Stats.route) }, // Navegamos a Stats
-                onBack = { navController.popBackStack() }
+                onStatsClick = { navController.navigate(AppScreens.Stats.route) },
+                onStoreClick = { navController.navigate(AppScreens.Store.route) },
+                onBack = { navController.popBackStack() },
+                onDismissOfflineGains = { dotVM.dismissOfflineGains() },
+                onStartSensor = { dotVM.startSensor() },
+                onStopSensor = { dotVM.stopSensor() }
             )
         }
 
-
-
-
-// RUTA 4: Las stats
+        // RUTA 4: Las stats
         composable(route = AppScreens.Stats.route) {
             val statsVM: StatsViewModel = viewModel()
             val statsState by statsVM.uiState.collectAsState()
@@ -113,6 +115,20 @@ fun AppNavigation(
 
             ScreenStats(
                 state = statsState,
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        // RUTA 5: La Tienda
+        composable(route = AppScreens.Store.route) {
+            val dotState by dotVM.uiState.collectAsState()
+
+            ScreenStore(
+                state = dotState,
+                onBuyClickMultiplier = { dotVM.buyClickMultiplier() },
+                onBuyAutoMultiplier = { dotVM.buyAutoMultiplier() },
+                onBuyAutoSpeed = { dotVM.buyAutoSpeed() },
+                onBuyCritChance = { dotVM.buyCritChance() },
                 onBack = { navController.popBackStack() }
             )
         }

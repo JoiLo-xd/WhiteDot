@@ -6,8 +6,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 data class StatsUiState(
-    val totalEver: Int = 0,
-    val totalAuto: Int = 0
+    val totalEver: Float = 0f,
+    val totalAuto: Float = 0f,
+    val autoDelay: Long = 2000L,
+    val critChance: Float = 0f
 )
 
 class StatsViewModel : ViewModel() {
@@ -18,7 +20,9 @@ class StatsViewModel : ViewModel() {
     fun loadStats() {
         _uiState.value = StatsUiState(
             totalEver = GameData.totalClicksEver,
-            totalAuto = GameData.autoClicksCount
+            totalAuto = GameData.autoClicksCount,
+            autoDelay = GameData.autoClickDelay,
+            critChance = GameData.critChance
         )
     }
 }

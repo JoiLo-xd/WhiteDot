@@ -19,5 +19,6 @@ sealed class AppScreens (val route: String ){
     data object Simon : AppScreens( "simon_screen")
     // Aquesta pantalla no canvia cap dada, per tant no té paràmetres.
     data object Stats : AppScreens("stats_screen")
+    data object Store : AppScreens("store_screen")
 
 }
